@@ -37,17 +37,16 @@ void sendnlmsg(char *message)
 		return;
 	}
 	slen = strlen(message);
-	nlh = nlmsg_put(skb_1,0,0,0,MAX_MSGSIZE,0);
+	nlh = nlmsg_put(skb_1, 0, 0, 0, MAX_MSGSIZE, 0);
 
 	NETLINK_CB(skb_1).portid = 0;
 	NETLINK_CB(skb_1).dst_group = 0;
 
 	message[slen]= '\0';
-	memcpy(NLMSG_DATA(nlh),message,slen+1);
+	memcpy(NLMSG_DATA(nlh), message, slen+1);
 
-	ret = netlink_unicast(nl_sk,skb_1,pid,MSG_DONTWAIT);
+	ret = netlink_unicast(nl_sk, skb_1, pid, MSG_DONTWAIT);
 	if(!ret) {
-
 		pr_err("send msg from kernel to usespace failed ret 0x%x \n", ret);
 	}
 
@@ -76,6 +75,7 @@ void nl_data_ready(struct sk_buff *__skb)
 int netlink_init(void)
 {
 	struct netlink_kernel_cfg netlink_cfg;
+
 	memset(&netlink_cfg, 0, sizeof(struct netlink_kernel_cfg));
 
 	netlink_cfg.groups = 0;
@@ -86,7 +86,7 @@ int netlink_init(void)
 	nl_sk = netlink_kernel_create(&init_net, NETLINK_TEST,
 			&netlink_cfg);
 
-	if(!nl_sk){
+	if (!nl_sk) {
 		pr_err("create netlink socket error\n");
 		return 1;
 	}
@@ -96,11 +96,10 @@ int netlink_init(void)
 
 void netlink_exit(void)
 {
-	if(nl_sk != NULL){
+	if (nl_sk != NULL) {
 		netlink_kernel_release(nl_sk);
 		nl_sk = NULL;
 	}
 
 	pr_info("self module exited\n");
 }
-
