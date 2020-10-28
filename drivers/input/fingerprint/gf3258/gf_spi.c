@@ -77,7 +77,6 @@ static DECLARE_BITMAP(minors, N_SPI_MINORS);
 static LIST_HEAD(device_list);
 static DEFINE_MUTEX(device_list_lock);
 //static struct wake_lock fp_wakelock;
-static struct wakeup_source fp_ws;//for kernel 4.9
 static struct gf_dev gf;
 
 extern int fpsensor;
@@ -347,8 +346,7 @@ static irqreturn_t gf_irq(int irq, void *handle)
 #if defined(GF_NETLINK_ENABLE)
 	char msg = GF_NET_EVENT_IRQ;
 	struct gf_dev *gf_dev = &gf;
-	//wake_lock_timeout(&fp_wakelock, msecs_to_jiffies(WAKELOCK_HOLD_TIME));
-	__pm_wakeup_event(&fp_ws, WAKELOCK_HOLD_TIME);//for kernel 4.9
+	__pm_wakeup_event(gf_dev->fp_ws, WAKELOCK_HOLD_TIME);
 	sendnlmsg(&msg);
 	if ((gf_dev->wait_finger_down == true) && (gf_dev->device_available == 1) && (gf_dev->fb_black == 1)) {
 		printk("%s:shedule_work\n",__func__);
@@ -832,8 +830,7 @@ static int gf_probe(struct platform_device *pdev)
 	gf_dev->notifier = goodix_noti_block;
 	fb_register_client(&gf_dev->notifier);
 
-	//wake_lock_init(&fp_wakelock, WAKE_LOCK_SUSPEND, "fp_wakelock");
-	wakeup_source_init(&fp_ws, "fp_ws");//for kernel 4.9
+	gf_dev->fp_ws = wakeup_source_register(NULL, "fp_ws");
 
 	proc_entry = proc_create(PROC_NAME, 0644, NULL, &proc_file_ops);
 	if (NULL == proc_entry) {
@@ -879,8 +876,7 @@ static int gf_remove(struct platform_device *pdev)
 {
 	struct gf_dev *gf_dev = &gf;
 
-	//wake_lock_destroy(&fp_wakelock);
-	wakeup_source_trash(&fp_ws);//for kernel 4.9
+	wakeup_source_unregister(gf_dev->fp_ws);
 	fb_unregister_client(&gf_dev->notifier);
 	if (gf_dev->input)
 		input_unregister_device(gf_dev->input);
