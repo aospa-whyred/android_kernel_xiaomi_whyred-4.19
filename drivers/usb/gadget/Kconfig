@@ -244,7 +244,7 @@ config USB_F_QDSS
 config USB_F_GSI
 	tristate
 
-config USB_F_RMNET_BAM
+config USB_F_MTP
 	tristate
 
 config USB_F_PTP
