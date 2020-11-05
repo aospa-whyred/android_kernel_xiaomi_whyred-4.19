@@ -79,8 +79,10 @@ static const struct msm_jpegdma_block msm_jpegdma_block_sel[] = {
 */
 static inline long long jpegdma_do_div(long long num, long long den)
 {
-	do_div(num, den);
-	return num;
+	uint64_t n = (uint64_t) num;
+
+	do_div(n, (uint32_t)den);
+	return n;
 }
 
 /*
@@ -809,7 +811,7 @@ static int msm_jpegdma_hw_calc_speed(struct msm_jpegdma_device *dma,
 {
 	u64 width;
 	u64 height;
-	u64 real_clock;
+	long real_clock;
 	u64 calc_rate;
 	int core_clk_idx;
 
@@ -921,7 +923,7 @@ static int msm_jpegdma_hw_add_plane_offset(struct msm_jpegdma_plane *plane,
 static int msm_jpegdma_hw_calc_config(struct msm_jpegdma_size_config *size_cfg,
 	struct msm_jpegdma_plane *plane)
 {
-	u64 scale_hor, scale_ver, phase;
+	u64 scale_hor, scale_ver, phase = 0;
 	u64 in_width, in_height;
 	u64 out_width, out_height;
 	struct msm_jpegdma_config *config;
@@ -962,7 +964,7 @@ static int msm_jpegdma_hw_calc_config(struct msm_jpegdma_size_config *size_cfg,
 	if (plane->active_pipes > 1) {
 		phase = jpegdma_do_div((out_height * scale_ver +
 			(plane->active_pipes - 1)), plane->active_pipes);
-		phase &= (MSM_JPEGDMA_SCALE_UNI - 1);
+		phase &= (u64)(MSM_JPEGDMA_SCALE_UNI - 1);
 		out_height = jpegdma_do_div((out_height +
 			(plane->active_pipes - 1)), plane->active_pipes);
 		in_height = (out_height * scale_ver) / MSM_JPEGDMA_SCALE_UNI;
@@ -1729,7 +1731,9 @@ error_regulators_get:
 void msm_jpegdma_hw_put(struct msm_jpegdma_device *dma)
 {
 	mutex_lock(&dma->lock);
-	BUG_ON(dma->ref_count == 0);
+
+	if (WARN_ON(!dma->ref_count))
+		goto err;
 
 	if (--dma->ref_count == 0) {
 		msm_jpegdma_hw_halt(dma);
@@ -1747,6 +1751,7 @@ void msm_jpegdma_hw_put(struct msm_jpegdma_device *dma)
 	}
 	/* Reset clock rate, need to be updated on next processing */
 	dma->active_clock_rate = -1;
+err:
 	mutex_unlock(&dma->lock);
 }
 
