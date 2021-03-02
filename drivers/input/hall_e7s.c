@@ -32,7 +32,6 @@ struct hall_switch_info
 {
 	struct mutex io_lock;
 	u32 irq_gpio;
-	u32 irq_gpio_flags;
 	int irq;
 	int hall_switch_state;
 	struct input_dev *ipdev;
@@ -81,8 +80,7 @@ static int hall_parse_dt(struct device *dev, struct hall_switch_info *pdata)
 {
 	struct device_node *np = dev->of_node;
 
-	pdata->irq_gpio = of_get_named_gpio_flags(np, "hall,irq-gpio",
-				0, &pdata->irq_gpio_flags);
+	pdata->irq_gpio = of_get_named_gpio(np, "hall,irq-gpio", 0);
 	if (pdata->irq_gpio < 0)
 		return pdata->irq_gpio;
 
